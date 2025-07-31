@@ -1,0 +1,319 @@
+.trading-flow {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #1a1a2e;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.trading-header {
+  margin-bottom: 2rem;
+}
+
+.trading-header h2 {
+  color: #00d2ff;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.trade-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.trade-pet,
+.trade-price,
+.trade-timer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.trade-info .label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.trade-info .value {
+  font-size: 1.1rem;
+  color: white;
+  font-weight: 600;
+}
+
+.trade-timer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trade-timer svg {
+  color: #00d2ff;
+}
+
+.trade-timer span {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+}
+
+.trade-timer span.urgent {
+  color: #ff6b6b;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d2ff, #0099cc);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.step-indicators {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.step-indicators::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.step-indicator {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2d2d44;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.step-indicator.active {
+  background: #00d2ff;
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
+}
+
+.step-indicator.completed {
+  background: #0099cc;
+  color: white;
+}
+
+.step-indicator svg {
+  font-size: 1.2rem;
+}
+
+.current-step {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.current-step h3 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.current-step p {
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.step-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  border-radius: 8px;
+  margin: 1rem auto;
+  display: block;
+}
+
+.copy-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(0, 210, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 210, 255, 0.2);
+}
+
+.copy-text {
+  flex: 1;
+  font-family: monospace;
+  color: #00d2ff;
+  font-size: 1.1rem;
+  word-break: break-all;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #00d2ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.copy-button:hover {
+  background: #0099cc;
+  transform: translateY(-1px);
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-button.primary {
+  background: linear-gradient(45deg, #00d2ff, #0099cc);
+  color: white;
+}
+
+.action-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 210, 255, 0.4);
+}
+
+.action-button.success {
+  background: linear-gradient(45deg, #10b981, #059669);
+  color: white;
+}
+
+.action-button.success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+
+.wait-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: #00d2ff;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 210, 255, 0.3);
+  border-top-color: #00d2ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.nav-button {
+  padding: 0.75rem 1.5rem;
+  background: #2d2d44;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: #3d3d55;
+  transform: translateY(-1px);
+}
+
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-button.primary {
+  background: linear-gradient(45deg, #00d2ff, #0099cc);
+}
+
+.nav-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 210, 255, 0.4);
+}
+
+.trade-actions {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cancel-button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

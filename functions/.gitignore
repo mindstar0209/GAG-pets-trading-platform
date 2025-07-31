@@ -1,0 +1,7 @@
+node_modules/
+*.local# Environ
+ment variables with bot credentials
+.env
+.env.local
+.env.production
+.env.staging

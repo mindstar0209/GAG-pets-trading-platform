@@ -1,0 +1,172 @@
+.game-teleporter {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 16px 0;
+}
+
+.teleporter-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.teleporter-header h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.teleporter-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.teleporter-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.quick-join-btn, .server-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-join-btn {
+  background: linear-gradient(135deg, #00D2FF 0%, #3A7BD5 100%);
+  color: white;
+}
+
+.server-select-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.quick-join-btn:hover:not(:disabled),
+.server-select-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.quick-join-btn:disabled,
+.server-select-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.server-list {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.server-list h4 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.servers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.server-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.server-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.server-number {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.server-players {
+  color: #666;
+  font-size: 12px;
+}
+
+.server-ping {
+  color: #28a745;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.join-server-btn {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.join-server-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.join-server-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.login-prompt {
+  text-align: center;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.login-prompt p {
+  margin: 0;
+  color: #856404;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .teleporter-actions {
+    flex-direction: column;
+  }
+  
+  .servers-grid {
+    grid-template-columns: 1fr;
+  }
+}

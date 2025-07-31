@@ -1,0 +1,58 @@
+.roblox-teleport-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #00D2FF 0%, #3A7BD5 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.roblox-teleport-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+}
+
+.roblox-teleport-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.roblox-teleport-btn .loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.roblox-teleport-btn .roblox-icon {
+  font-size: 16px;
+}
+
+/* Variants */
+.roblox-teleport-btn.primary {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+}
+
+.roblox-teleport-btn.success {
+  background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+}
+
+.roblox-teleport-btn.large {
+  padding: 16px 24px;
+  font-size: 16px;
+}
+
+.roblox-teleport-btn.small {
+  padding: 8px 12px;
+  font-size: 12px;
+}

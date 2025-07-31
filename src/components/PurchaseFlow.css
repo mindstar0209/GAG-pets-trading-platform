@@ -1,0 +1,433 @@
+.purchase-flow-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.purchase-flow-modal {
+  background: #1a1a2e;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1001;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.purchase-step {
+  padding: 30px;
+}
+
+.purchase-step h2 {
+  color: white;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.pet-summary {
+  display: flex;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.pet-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.pet-details h3 {
+  color: white;
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+}
+
+.pet-type {
+  color: #94a3b8;
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+}
+
+.pet-price {
+  color: #00D2FF;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.seller-info {
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.seller-info h4 {
+  color: #00D2FF;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.seller-info p {
+  color: #e2e8f0;
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+.seller-note {
+  color: #94a3b8 !important;
+  font-style: italic;
+}
+
+.payment-info {
+  margin-bottom: 20px;
+}
+
+.payment-summary {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #e2e8f0;
+}
+
+.summary-row.total {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  margin-top: 10px;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.balance-info {
+  text-align: center;
+}
+
+.balance-info p {
+  color: #94a3b8;
+  margin: 5px 0;
+}
+
+.insufficient-funds {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.error-message p {
+  color: #ef4444;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.success-message p {
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.friend-request-section h3 {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.step-instructions {
+  margin-bottom: 25px;
+}
+
+.instruction-step {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.step-num {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(45deg, #00D2FF, #0099CC);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.step-text h4 {
+  color: white;
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+}
+
+.step-text p {
+  color: #94a3b8;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.seller-actions {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.seller-username {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.roblox-profile-btn {
+  background: linear-gradient(45deg, #00D2FF, #0099CC);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.roblox-profile-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+}
+
+.friend-sent-btn {
+  background: #10B981;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.friend-sent-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.completion-message {
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.completion-message h3 {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.completion-message > p {
+  color: #94a3b8;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.next-steps {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.next-steps h4 {
+  color: white;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+}
+
+.next-steps ul {
+  color: #94a3b8;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.next-steps li {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.support-info {
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.support-info p {
+  color: #e2e8f0;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.support-info code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #00D2FF;
+  font-family: monospace;
+}
+
+.purchase-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #374151;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #4B5563;
+}
+
+@media (max-width: 768px) {
+  .purchase-flow-modal {
+    margin: 10px;
+    max-width: none;
+  }
+  
+  .purchase-step {
+    padding: 20px;
+  }
+  
+  .pet-summary {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pet-image {
+    align-self: center;
+  }
+  
+  .purchase-actions {
+    flex-direction: column;
+  }
+  
+  .action-buttons {
+    gap: 8px;
+  }
+}
