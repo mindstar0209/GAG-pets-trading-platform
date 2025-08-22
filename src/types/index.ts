@@ -7,6 +7,33 @@ export interface User {
   photoURL?: string;
 }
 
+// Simplified multi-Roblox account management
+export interface RobloxAccount {
+  id: string;
+  robloxUserId: string;
+  robloxUsername: string;
+  displayName: string;
+  avatarUrl: string;
+  isVerified: boolean;
+  isActive: boolean; // Whether this is the currently active account
+  isFrozen: boolean; // Account frozen/unfrozen status
+  linkedAt: Date;
+  lastUsed: Date;
+  cookie?: string; // Encrypted cookie if available
+  verificationMethod: 'cookie' | 'username' | 'manual';
+  permissions: {
+    canTrade: boolean;
+    canTeleport: boolean;
+    canAccessInventory: boolean;
+  };
+}
+
+export interface LinkedAccounts {
+  accounts: RobloxAccount[];
+  maxAccounts: number;
+  totalAccounts: number;
+}
+
 export interface Pet {
   id: string;
   name: string;

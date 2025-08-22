@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
-import { RobloxTeleportService } from '../services/robloxTeleport';
-import RobloxAccountLinker from './RobloxAccountLinker';
-import './PurchaseWithTeleport.css';
+import React, { useState } from "react";
+import { useTraditionalAuth } from "../hooks/useTraditionalAuth";
+import { RobloxTeleportService } from "../services/robloxTeleport";
+import RobloxAccountLinker from "./RobloxAccountLinker";
+import "./PurchaseWithTeleport.css";
 
 interface PurchaseWithTeleportProps {
   petId: string;
@@ -17,12 +17,16 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
   sellerId,
   sellerUsername,
   price,
-  onPurchaseComplete
+  onPurchaseComplete,
 }) => {
-  const { user, firebaseUser } = useTraditionalAuth();
-  const [step, setStep] = useState<'verify' | 'confirm' | 'teleport' | 'complete'>('verify');
+  const { user } = useTraditionalAuth();
+  const { getActiveAccount } = useTraditionalAuth();
+  const activeAccount = getActiveAccount();
+  const [step, setStep] = useState<
+    "verify" | "confirm" | "teleport" | "complete"
+  >("verify");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [teleportData, setTeleportData] = useState<any>(null);
 
   if (!user) {
@@ -35,7 +39,7 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
 
   const handlePurchase = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Create mock teleport data for now
@@ -44,12 +48,12 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
         gameId: "8737899170", // Pet Simulator 99
         accessCode: `PET_${petId.substring(0, 8).toUpperCase()}`,
         sellerId,
-        petId
+        petId,
       };
       setTeleportData(data);
-      setStep('teleport');
+      setStep("teleport");
     } catch (err: any) {
-      setError(err.message || 'Failed to initiate purchase');
+      setError(err.message || "Failed to initiate purchase");
     } finally {
       setLoading(false);
     }
@@ -61,32 +65,34 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
     try {
       // Use the existing teleportToGame method
       RobloxTeleportService.teleportToGame(teleportData.gameId);
-      
+
       // Move to completion step
-      setStep('complete');
-      
+      setStep("complete");
+
       if (onPurchaseComplete) {
         onPurchaseComplete();
       }
     } catch (err: any) {
-      setError('Failed to open Roblox. Please try again.');
+      setError("Failed to open Roblox. Please try again.");
     }
   };
 
   // Show verification if user hasn't linked their Roblox account
-  if (!user.isRobloxVerified && step === 'verify') {
+  if (!activeAccount?.isVerified && step === "verify") {
     return (
       <div className="purchase-container">
         <h3>Link Your Roblox Account</h3>
-        <p>Please link your Roblox account to enable teleportation for trades.</p>
-        <RobloxAccountLinker onLinked={() => setStep('confirm')} />
+        <p>
+          Please link your Roblox account to enable teleportation for trades.
+        </p>
+        <RobloxAccountLinker onLinked={() => setStep("confirm")} />
       </div>
     );
   }
 
   return (
     <div className="purchase-container">
-      {step === 'confirm' && (
+      {step === "confirm" && (
         <div className="purchase-confirm">
           <h3>Confirm Purchase</h3>
           <div className="purchase-details">
@@ -118,7 +124,7 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
               onClick={handlePurchase}
               disabled={loading || user.balance < price}
             >
-              {loading ? 'Processing...' : 'Confirm Purchase'}
+              {loading ? "Processing..." : "Confirm Purchase"}
             </button>
           </div>
 
@@ -134,19 +140,18 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
         </div>
       )}
 
-      {step === 'teleport' && teleportData && (
+      {step === "teleport" && teleportData && (
         <div className="purchase-teleport">
           <h3>Ready to Receive Your Pet!</h3>
-          
+
           <div className="teleport-info">
             <p>Click the button below to join {sellerUsername}'s game.</p>
-            <p className="access-code">Access Code: <strong>{teleportData.accessCode}</strong></p>
+            <p className="access-code">
+              Access Code: <strong>{teleportData.accessCode}</strong>
+            </p>
           </div>
 
-          <button
-            className="teleport-button"
-            onClick={handleTeleport}
-          >
+          <button className="teleport-button" onClick={handleTeleport}>
             🎮 Join Roblox Game
           </button>
 
@@ -164,21 +169,23 @@ const PurchaseWithTeleport: React.FC<PurchaseWithTeleportProps> = ({
         </div>
       )}
 
-      {step === 'complete' && (
+      {step === "complete" && (
         <div className="purchase-complete">
           <div className="success-icon">✅</div>
           <h3>Purchase Initiated!</h3>
           <p>You should now be joining the seller's game.</p>
-          
+
           <div className="complete-info">
             <h4>Didn't work?</h4>
             <p>If Roblox didn't open automatically:</p>
             <button
               className="retry-button"
-              onClick={() => window.open(
-                `https://www.roblox.com/games/${teleportData.gameId}`,
-                '_blank'
-              )}
+              onClick={() =>
+                window.open(
+                  `https://www.roblox.com/games/${teleportData.gameId}`,
+                  "_blank"
+                )
+              }
             >
               Open in Browser
             </button>
