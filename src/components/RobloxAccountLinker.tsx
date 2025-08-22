@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
-import { RobloxApiService } from '../services/robloxApi';
-import './RobloxAccountLinker.css';
+import React, { useState } from "react";
+import { useTraditionalAuth } from "../hooks/useTraditionalAuth";
+import { RobloxApiService } from "../services/robloxApi";
+import "./RobloxAccountLinker.css";
 
 interface RobloxAccountLinkerProps {
   onLinked?: () => void;
@@ -10,14 +10,14 @@ interface RobloxAccountLinkerProps {
 
 const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
   onLinked,
-  showTitle = true
+  showTitle = true,
 }) => {
-  const { user, linkRobloxAccount } = useTraditionalAuth();
-  const [robloxUsername, setRobloxUsername] = useState('');
+  const { user, linkRobloxAccount, verifyRobloxAccount } = useTraditionalAuth();
+  const [robloxUsername, setRobloxUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [step, setStep] = useState<'input' | 'verify' | 'complete'>('input');
-  const [verificationCode, setVerificationCode] = useState('');
+  const [error, setError] = useState("");
+  const [step, setStep] = useState<"input" | "verify" | "complete">("input");
+  const [verificationCode, setVerificationCode] = useState("");
 
   if (!user) {
     return (
@@ -29,27 +29,28 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
 
   const handleLinkAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       // Validate Roblox username exists
-      const validationResult = await RobloxApiService.validateUsername(robloxUsername);
-      
+      const validationResult = await RobloxApiService.validateUsername(
+        robloxUsername
+      );
+
       if (!validationResult.valid) {
-        throw new Error(validationResult.error || 'Invalid Roblox username');
+        throw new Error(validationResult.error || "Invalid Roblox username");
       }
 
       // Link the account
       await linkRobloxAccount(robloxUsername);
-      
+
       // Generate verification code
       const code = `STARPETS_${user.uid.substring(0, 8).toUpperCase()}`;
       setVerificationCode(code);
-      setStep('verify');
-      
+      setStep("verify");
     } catch (err: any) {
-      setError(err.message || 'Failed to link Roblox account');
+      setError(err.message || "Failed to link Roblox account");
     } finally {
       setLoading(false);
     }
@@ -57,30 +58,37 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
 
   const handleVerification = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Check if user has updated their Roblox status
-      const robloxUserData = await RobloxApiService.searchUserByUsername(robloxUsername);
+      const robloxUserData = await RobloxApiService.searchUserByUsername(
+        robloxUsername
+      );
       if (!robloxUserData) {
-        throw new Error('Roblox user not found');
+        throw new Error("Roblox user not found");
       }
 
-      const userStatus = await RobloxApiService.getUserStatus(robloxUserData.id);
-      
+      const userStatus = await RobloxApiService.getUserStatus(
+        robloxUserData.id
+      );
+
       if (!userStatus.includes(verificationCode)) {
-        throw new Error('Verification code not found in your Roblox status. Please update your status and try again.');
+        throw new Error(
+          "Verification code not found in your Roblox status. Please update your status and try again."
+        );
       }
 
-      // Mark as verified (you'd want to update this in your backend)
-      setStep('complete');
-      
+      // Mark as verified in the database
+      await verifyRobloxAccount();
+
+      setStep("complete");
+
       if (onLinked) {
         onLinked();
       }
-      
     } catch (err: any) {
-      setError(err.message || 'Verification failed');
+      setError(err.message || "Verification failed");
     } finally {
       setLoading(false);
     }
@@ -91,14 +99,16 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
       {showTitle && (
         <div className="linker-header">
           <h3>Link Your Roblox Account</h3>
-          <p>Connect your Roblox account to enable game teleportation for trades</p>
+          <p>
+            Connect your Roblox account to enable game teleportation for trades
+          </p>
         </div>
       )}
 
-      {step === 'input' && (
+      {step === "input" && (
         <form onSubmit={handleLinkAccount} className="linker-form">
           {error && <div className="linker-error">{error}</div>}
-          
+
           <div className="form-group">
             <label htmlFor="robloxUsername" className="form-label">
               Roblox Username
@@ -117,12 +127,12 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
             />
           </div>
 
-          <button 
+          <button
             type="submit"
             className="linker-button"
             disabled={loading || !robloxUsername}
           >
-            {loading ? 'Validating...' : 'Link Account'}
+            {loading ? "Validating..." : "Link Account"}
           </button>
 
           <div className="linker-benefits">
@@ -137,18 +147,21 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
         </form>
       )}
 
-      {step === 'verify' && (
+      {step === "verify" && (
         <div className="verification-step">
           <h4>Verify Account Ownership</h4>
-          <p>To complete the linking process, please update your Roblox status with the code below:</p>
-          
+          <p>
+            To complete the linking process, please update your Roblox status
+            with the code below:
+          </p>
+
           <div className="verification-code-display">
             <strong>{verificationCode}</strong>
-            <button 
+            <button
               className="copy-button"
               onClick={() => {
                 navigator.clipboard.writeText(verificationCode);
-                alert('Code copied to clipboard!');
+                alert("Code copied to clipboard!");
               }}
             >
               📋 Copy
@@ -158,9 +171,20 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
           <div className="verification-instructions">
             <h5>How to update your Roblox status:</h5>
             <ol>
-              <li>Go to <a href="https://www.roblox.com/my/account#!/info" target="_blank" rel="noopener noreferrer">Roblox Account Settings</a></li>
+              <li>
+                Go to{" "}
+                <a
+                  href="https://www.roblox.com/my/account#!/info"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Roblox Account Settings
+                </a>
+              </li>
               <li>Find the "Status" field</li>
-              <li>Paste the verification code: <code>{verificationCode}</code></li>
+              <li>
+                Paste the verification code: <code>{verificationCode}</code>
+              </li>
               <li>Save your changes</li>
               <li>Come back and click "Verify" below</li>
             </ol>
@@ -169,16 +193,16 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
           {error && <div className="linker-error">{error}</div>}
 
           <div className="verification-actions">
-            <button 
+            <button
               onClick={handleVerification}
               className="verify-button"
               disabled={loading}
             >
-              {loading ? 'Verifying...' : 'Verify Account'}
+              {loading ? "Verifying..." : "Verify Account"}
             </button>
-            
-            <button 
-              onClick={() => setStep('input')}
+
+            <button
+              onClick={() => setStep("input")}
               className="back-button"
               disabled={loading}
             >
@@ -188,12 +212,15 @@ const RobloxAccountLinker: React.FC<RobloxAccountLinkerProps> = ({
         </div>
       )}
 
-      {step === 'complete' && (
+      {step === "complete" && (
         <div className="linking-complete">
           <div className="success-icon">✅</div>
           <h4>Roblox Account Linked!</h4>
-          <p>Your Roblox account <strong>{robloxUsername}</strong> has been successfully linked.</p>
-          
+          <p>
+            Your Roblox account <strong>{robloxUsername}</strong> has been
+            successfully linked.
+          </p>
+
           <div className="complete-benefits">
             <p>You can now:</p>
             <ul>

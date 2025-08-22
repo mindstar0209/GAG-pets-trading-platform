@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
-import './Auth.css';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTraditionalAuth } from "../hooks/useTraditionalAuth";
+import "./Auth.css";
 
 const Register: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const { register, user, error, clearError } = useTraditionalAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
@@ -27,21 +27,27 @@ const Register: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate passwords match
     if (password !== confirmPassword) {
       // You might want to add a local error state for this
-      alert('Passwords do not match');
+      alert("Passwords do not match");
       return;
     }
-    
+
     setLoading(true);
     try {
       await register(username, email, password);
       // Navigation happens automatically via useEffect when user is set
-    } catch (err) {
+    } catch (err: any) {
       // Error is handled by the auth context
       setLoading(false);
+
+      if (err.message?.includes("already exists")) {
+        // You could add a link to login page here
+        console.log("User should sign in instead");
+        navigate("/login");
+      }
     }
   };
 
@@ -50,14 +56,18 @@ const Register: React.FC = () => {
       <div className="auth-container">
         <div className="auth-header">
           <h1 className="auth-title">Create Account</h1>
-          <p className="auth-subtitle">Join the community and start trading pets</p>
+          <p className="auth-subtitle">
+            Join the community and start trading pets
+          </p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
-          
+
           <div className="form-group">
-            <label htmlFor="username" className="form-label">Username</label>
+            <label htmlFor="username" className="form-label">
+              Username
+            </label>
             <input
               type="text"
               id="username"
@@ -73,11 +83,15 @@ const Register: React.FC = () => {
               pattern="[a-zA-Z0-9_]+"
               title="Username can only contain letters, numbers, and underscores"
             />
-            <small className="form-hint">3-20 characters, letters, numbers, and underscores only</small>
+            <small className="form-hint">
+              3-20 characters, letters, numbers, and underscores only
+            </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="email" className="form-label">Email Address</label>
+            <label htmlFor="email" className="form-label">
+              Email Address
+            </label>
             <input
               type="email"
               id="email"
@@ -91,7 +105,9 @@ const Register: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password" className="form-label">Password</label>
+            <label htmlFor="password" className="form-label">
+              Password
+            </label>
             <input
               type="password"
               id="password"
@@ -107,7 +123,9 @@ const Register: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="form-label">
+              Confirm Password
+            </label>
             <input
               type="password"
               id="confirmPassword"
@@ -119,13 +137,15 @@ const Register: React.FC = () => {
               required
             />
           </div>
-          
-          <button 
+
+          <button
             type="submit"
             className="auth-button primary"
-            disabled={loading || !username || !email || !password || !confirmPassword}
+            disabled={
+              loading || !username || !email || !password || !confirmPassword
+            }
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
@@ -139,10 +159,14 @@ const Register: React.FC = () => {
 
         <div className="auth-footer">
           <p>
-            By creating an account, you agree to our{' '}
-            <Link to="/terms" className="auth-link">Terms of Service</Link>
-            {' '}and{' '}
-            <Link to="/privacy" className="auth-link">Privacy Policy</Link>
+            By creating an account, you agree to our{" "}
+            <Link to="/terms" className="auth-link">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="auth-link">
+              Privacy Policy
+            </Link>
           </p>
         </div>
       </div>

@@ -246,3 +246,112 @@
     width: 100%;
   }
 }
+
+/* Settings Tabs */
+.settings-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0;
+}
+
+.settings-tabs .tab-button {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.settings-tabs .tab-button:hover {
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+}
+
+.settings-tabs .tab-button.active {
+  color: #3498db;
+  border-bottom-color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+}
+
+/* Roblox Linking Options */
+.roblox-linking-options {
+  display: grid;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.linking-option {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  border: 2px solid #e9ecef;
+  transition: border-color 0.2s ease;
+}
+
+.linking-option:hover {
+  border-color: #3498db;
+}
+
+.linking-option h3 {
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.linking-option p {
+  color: #7f8c8d;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .settings-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .settings-tabs .tab-button {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .roblox-linking-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.linked-accounts-section {
+  margin-bottom: 32px;
+}
+
+.roblox-linking-options {
+  display: grid;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.linking-option {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.linking-option h3 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.linking-option p {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}

@@ -1,5 +1,6 @@
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/https");
+const axios = require("axios");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const cors = require("cors")({origin: true});
@@ -15,7 +16,6 @@ try {
 setGlobalOptions({maxInstances: 10});
 
 // Helper function to make HTTP requests
-const fetch = require("node-fetch");
 
 // Roblox API service functions
 const RobloxAPI = {
@@ -23,13 +23,13 @@ const RobloxAPI = {
     try {
       const url = "https://users.roblox.com/v1/users/search" +
         `?keyword=${encodeURIComponent(username)}&limit=10`;
-      const response = await fetch(url);
+      const response = await axios.get(url);
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(`Roblox API error: ${response.status}`);
       }
 
-      const searchResult = await response.json();
+      const searchResult = response.data;
 
       // Find exact username match (case-insensitive)
       const exactMatch = searchResult.data.find(
@@ -52,18 +52,18 @@ const RobloxAPI = {
 
   async getUserById(userId) {
     try {
-      const response = await fetch(
+      const response = await axios.get(
           `https://users.roblox.com/v1/users/${userId}`,
       );
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         if (response.status === 404) {
           return null;
         }
         throw new Error(`Roblox API error: ${response.status}`);
       }
 
-      return await response.json();
+      return response.data;
     } catch (error) {
       logger.error("Error fetching Roblox user:", error);
       throw new Error("Failed to fetch Roblox user data.");
@@ -74,13 +74,13 @@ const RobloxAPI = {
     try {
       const url = "https://thumbnails.roblox.com/v1/users/avatar-headshot" +
         `?userIds=${userId}&size=${size}x${size}&format=Png&isCircular=false`;
-      const response = await fetch(url);
+      const response = await axios.get(url);
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(`Roblox Thumbnails API error: ${response.status}`);
       }
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.data && result.data.length > 0) {
         return result.data[0].imageUrl;
@@ -157,8 +157,7 @@ async function sendRealFriendRequest(botUserId, targetUsername) {
 
     // Send friend request
     const friendUrl = `https://friends.roblox.com/v1/users/${targetUserId}/request-friendship`;
-    const response = await fetch(friendUrl, {
-      method: "POST",
+    const response = await axios.post(friendUrl, {}, {
       headers: {
         "Cookie": `.ROBLOSECURITY=${botConfig.cookie}`,
         "Content-Type": "application/json",
@@ -166,12 +165,11 @@ async function sendRealFriendRequest(botUserId, targetUsername) {
       },
     });
 
-    if (response.ok) {
+    if (response.status === 200) {
       logger.info(`✅ Bot ${botConfig.username} sent friend request to ${targetUsername}`);
       return true;
     } else {
-      const error = await response.text();
-      logger.error(`❌ Failed to send friend request:`, error);
+      logger.error(`❌ Failed to send friend request:`, response.data);
       return false;
     }
   } catch (error) {
@@ -239,14 +237,14 @@ async function checkFriendshipStatus(botUserId, targetUsername) {
     if (!targetUserId) return "none";
 
     const statusUrl = `https://friends.roblox.com/v1/users/${botUserId}/friends/statuses?userIds=${targetUserId}`;
-    const response = await fetch(statusUrl, {
+    const response = await axios.get(statusUrl, {
       headers: {
         "Cookie": `.ROBLOSECURITY=${botConfig.cookie}`,
       },
     });
 
-    if (response.ok) {
-      const data = await response.json();
+    if (response.status === 200) {
+      const data = response.data;
       const status = data.data[0]?.status;
 
       switch (status) {
@@ -271,10 +269,10 @@ async function checkFriendshipStatus(botUserId, targetUsername) {
 async function getUserIdFromUsername(username) {
   try {
     const searchUrl = `https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(username)}&limit=10`;
-    const response = await fetch(searchUrl);
+    const response = await axios.get(searchUrl);
 
-    if (response.ok) {
-      const data = await response.json();
+    if (response.status === 200) {
+      const data = response.data;
       const user = data.data.find((u) => u.name.toLowerCase() === username.toLowerCase());
       return user ? user.id.toString() : null;
     }
@@ -293,14 +291,13 @@ async function getUserIdFromUsername(username) {
  */
 async function getCSRFToken(cookie) {
   try {
-    const response = await fetch("https://auth.roblox.com/v2/logout", {
-      method: "POST",
+    const response = await axios.post("https://auth.roblox.com/v2/logout", {}, {
       headers: {
         "Cookie": `.ROBLOSECURITY=${cookie}`,
       },
     });
 
-    return response.headers.get("x-csrf-token") || "";
+    return response.headers["x-csrf-token"] || "";
   } catch (error) {
     logger.error("Error getting CSRF token:", error);
     return "";
@@ -602,6 +599,103 @@ async function handleBotTradingEndpoint(req, res, path, method) {
   }
 }
 
+/**
+ * Validate Roblox cookie and get user profile information
+ * @param {string} cookie - Bot's .ROBLOSECURITY cookie
+ * @return {Promise<Object>} User profile information
+ */
+async function validateRobloxCookie(cookie) {
+  try {
+    // Make a request to Roblox API with the cookie
+    const response = await axios.get("https://users.roblox.com/v1/users/authenticated", {
+      headers: {
+        "Cookie": `.ROBLOSECURITY=${cookie}`,
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+    });
+
+    if (response.status !== 200) {
+      if (response.status === 401) {
+        return {
+          success: false,
+          error: "Invalid or expired cookie",
+        };
+      }
+      throw new Error(`Roblox API error: ${response.status}`);
+    }
+
+    const userData = response.data;
+
+    // Get additional profile information
+    const profileResponse = await axios.get(`https://users.roblox.com/v1/users/${userData.id}`, {
+      headers: {
+        "Accept": "application/json",
+      },
+    });
+
+    if (profileResponse.status === 200) {
+      const profileData = profileResponse.data;
+
+      // Get avatar image
+      const avatarUrl = await RobloxAPI.getUserAvatar(userData.id);
+
+      return {
+        success: true,
+        userid: userData.id,
+        username: userData.name,
+        display_name: profileData.displayName,
+        user_avatar_picture: avatarUrl,
+        description: profileData.description,
+        has_verified_badge: profileData.hasVerifiedBadge,
+        is_banned: profileData.isBanned,
+        created_iso: profileData.created,
+      };
+    }
+
+    return {
+      success: true,
+      userid: userData.id,
+      username: userData.name,
+      display_name: userData.name,
+      user_avatar_picture: await RobloxAPI.getUserAvatar(userData.id),
+      is_banned: false,
+    };
+  } catch (error) {
+    logger.error("Error getting user info from cookie:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to get user information",
+    };
+  }
+}
+
+/**
+ * Validate cookie format (basic validation)
+ * @param {string} cookie - Bot's .ROBLOSECURITY cookie
+ * @return {Object} Validation result
+ */
+function validateCookieFormat(cookie) {
+  if (!cookie || cookie.trim().length === 0) {
+    return {valid: false, error: "Cookie cannot be empty"};
+  }
+
+  // Basic validation for common Roblox cookie patterns
+  const requiredFields = ["_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_"];
+  const hasRequiredField = requiredFields.some((field) =>
+    cookie.toLowerCase().includes(field.toLowerCase()),
+  );
+
+  if (!hasRequiredField) {
+    return {
+      valid: false,
+      error: "Invalid cookie format. Please make sure you're copying the complete .ROBLOSECURITY cookie",
+    };
+  }
+
+  return {valid: true};
+}
+
 // Main API handler
 exports.api = onRequest((req, res) => {
   return cors(req, res, async () => {
@@ -610,6 +704,47 @@ exports.api = onRequest((req, res) => {
       const method = req.method;
 
       logger.info(`API Request: ${method} ${path}`, {body: req.body});
+
+      // Add this new endpoint for cookie authentication
+      if (path === "/auth/roblox/cookie" && method === "POST") {
+        const {cookie} = req.body;
+
+        if (!cookie) {
+          return res.status(400).json({error: "Cookie is required"});
+        }
+
+        // Validate cookie format
+        const formatValidation = validateCookieFormat(cookie);
+        if (!formatValidation.valid) {
+          return res.status(400).json({error: formatValidation.error});
+        }
+
+        try {
+          // Validate cookie and get user profile
+          const result = await validateRobloxCookie(cookie);
+
+          if (!result.success) {
+            return res.status(400).json({error: result.error});
+          }
+
+          return res.json({
+            success: true,
+            userid: result.userid,
+            username: result.username,
+            display_name: result.display_name,
+            user_avatar_picture: result.user_avatar_picture,
+            description: result.description,
+            has_verified_badge: result.has_verified_badge,
+            is_banned: result.is_banned,
+            created_iso: result.created_iso,
+          });
+        } catch (error) {
+          logger.error("Error during Roblox cookie authentication:", error);
+          return res.status(500).json({
+            error: error.message || "Failed to authenticate with Roblox cookie",
+          });
+        }
+      }
 
       // Handle Roblox login
       if (path === "/auth/roblox/login" && method === "POST") {

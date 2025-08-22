@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
-import { BotTradingService } from '../services/botTradingService';
-import { RobloxTeleportService } from '../services/robloxTeleport';
-import './PetCustodyFlow.css';
+import React, { useState, useEffect } from "react";
+import { useTraditionalAuth } from "../hooks/useTraditionalAuth";
+import { BotTradingService } from "../services/botTradingService";
+import { RobloxTeleportService } from "../services/robloxTeleport";
+import "./PetCustodyFlow.css";
 
 interface PetCustodyFlowProps {
   petData: {
@@ -25,14 +25,25 @@ interface PetCustodyFlowProps {
 const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
   petData,
   onCustodyComplete,
-  onCancel
+  onCancel,
 }) => {
   const { user } = useTraditionalAuth();
-  const [step, setStep] = useState<'instructions' | 'bot_request' | 'waiting_trade' | 'verifying' | 'complete' | 'error'>('instructions');
+  const { getActiveAccount } = useTraditionalAuth();
+  const activeAccount = getActiveAccount();
+  const [step, setStep] = useState<
+    | "instructions"
+    | "bot_request"
+    | "waiting_trade"
+    | "verifying"
+    | "complete"
+    | "error"
+  >("instructions");
   const [custodyRequest, setCustodyRequest] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState("");
+  const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   useEffect(() => {
     return () => {
@@ -43,51 +54,50 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
   }, [statusPolling]);
 
   const handleStartCustody = async () => {
-    if (!user) {
-      setError('Please login to use pet custody.');
-      return;
-    }
+    if (!user) return;
 
-    // For testing purposes, use username if no Roblox username is linked
-    const robloxUsername = user.robloxUsername || user.username;
+    // For testing purposes, use active account username if no Roblox account is linked
+    const robloxUsername = activeAccount?.robloxUsername || user.username;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Initiate custody process with bot
-      const apiUrl = process.env.NODE_ENV === 'development' 
-        ? 'https://us-central1-sylvan-project-3d177.cloudfunctions.net/api/bot-trading/custody/initiate'
-        : '/api/bot-trading/custody/initiate';
-      
-      console.log('Making custody API call to:', apiUrl);
+      const apiUrl =
+        process.env.NODE_ENV === "development"
+          ? "https://us-central1-sylvan-project-3d177.cloudfunctions.net/api/bot-trading/custody/initiate"
+          : "/api/bot-trading/custody/initiate";
+
+      console.log("Making custody API call to:", apiUrl);
       const custody = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sellerId: user.uid,
           sellerRobloxUsername: robloxUsername,
           petData,
-          gameId: '8737899170' // Pet Simulator 99
-        })
+          gameId: "8737899170", // Pet Simulator 99
+        }),
       });
 
       if (!custody.ok) {
         const errorText = await custody.text();
-        console.error('Custody API error:', custody.status, errorText);
-        throw new Error(`Failed to initiate pet custody: ${custody.status} - ${errorText}`);
+        console.error("Custody API error:", custody.status, errorText);
+        throw new Error(
+          `Failed to initiate pet custody: ${custody.status} - ${errorText}`
+        );
       }
 
       const custodyData = await custody.json();
       setCustodyRequest(custodyData);
-      setStep('bot_request');
+      setStep("bot_request");
 
       // Start polling for custody status
       startCustodyPolling(custodyData.custodyId);
-
     } catch (err: any) {
-      setError(err.message || 'Failed to start custody process');
-      setStep('error');
+      setError(err.message || "Failed to start custody process");
+      setStep("error");
     } finally {
       setLoading(false);
     }
@@ -96,36 +106,37 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
   const startCustodyPolling = (custodyId: string) => {
     const interval = setInterval(async () => {
       try {
-        const statusUrl = process.env.NODE_ENV === 'development' 
-          ? `https://us-central1-sylvan-project-3d177.cloudfunctions.net/api/bot-trading/custody/status/${custodyId}`
-          : `/api/bot-trading/custody/status/${custodyId}`;
+        const statusUrl =
+          process.env.NODE_ENV === "development"
+            ? `https://us-central1-sylvan-project-3d177.cloudfunctions.net/api/bot-trading/custody/status/${custodyId}`
+            : `/api/bot-trading/custody/status/${custodyId}`;
         const response = await fetch(statusUrl);
         const status = await response.json();
         setCustodyRequest(status);
 
         switch (status.status) {
-          case 'friend_request_sent':
-            setStep('bot_request');
+          case "friend_request_sent":
+            setStep("bot_request");
             break;
-          case 'friend_accepted':
-            setStep('waiting_trade');
+          case "friend_accepted":
+            setStep("waiting_trade");
             break;
-          case 'pet_received':
-            setStep('verifying');
+          case "pet_received":
+            setStep("verifying");
             break;
-          case 'custody_complete':
-            setStep('complete');
+          case "custody_complete":
+            setStep("complete");
             clearInterval(interval);
             onCustodyComplete(status);
             break;
-          case 'failed':
-            setStep('error');
-            setError('Custody process failed. Please try again.');
+          case "failed":
+            setStep("error");
+            setError("Custody process failed. Please try again.");
             clearInterval(interval);
             break;
         }
       } catch (err) {
-        console.error('Error polling custody status:', err);
+        console.error("Error polling custody status:", err);
       }
     }, 3000);
 
@@ -133,14 +144,14 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
   };
 
   const handleJoinGame = () => {
-    RobloxTeleportService.teleportToGame('8737899170');
+    RobloxTeleportService.teleportToGame("8737899170");
   };
 
   const botInfo = custodyRequest?.botInfo;
 
   return (
     <div className="pet-custody-flow">
-      {step === 'instructions' && (
+      {step === "instructions" && (
         <div className="custody-instructions">
           <div className="custody-header">
             <h3>🤖 Pet Custody System</h3>
@@ -148,10 +159,17 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
           </div>
 
           <div className="pet-preview">
-            <img src={petData.imageUrl} alt={petData.name} className="pet-image" />
+            <img
+              src={petData.imageUrl}
+              alt={petData.name}
+              className="pet-image"
+            />
             <div className="pet-info">
               <h4>{petData.name}</h4>
-              <p>{petData.type} • {petData.rarity} • {petData.price === 0 ? 'FREE (Test)' : `$${petData.price}`}</p>
+              <p>
+                {petData.type} • {petData.rarity} •{" "}
+                {petData.price === 0 ? "FREE (Test)" : `$${petData.price}`}
+              </p>
             </div>
           </div>
 
@@ -171,10 +189,19 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
           <div className="custody-benefits">
             <h4>Why Use Pet Custody?</h4>
             <ul>
-              <li>✅ <strong>Secure Trading</strong> - Bot prevents scams</li>
-              <li>✅ <strong>Instant Delivery</strong> - Buyers get pets immediately</li>
-              <li>✅ <strong>No Manual Work</strong> - Fully automated process</li>
-              <li>✅ <strong>Higher Sales</strong> - Buyers trust bot delivery</li>
+              <li>
+                ✅ <strong>Secure Trading</strong> - Bot prevents scams
+              </li>
+              <li>
+                ✅ <strong>Instant Delivery</strong> - Buyers get pets
+                immediately
+              </li>
+              <li>
+                ✅ <strong>No Manual Work</strong> - Fully automated process
+              </li>
+              <li>
+                ✅ <strong>Higher Sales</strong> - Buyers trust bot delivery
+              </li>
             </ul>
           </div>
 
@@ -192,20 +219,17 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
               onClick={handleStartCustody}
               disabled={loading || !user}
             >
-              {loading ? 'Starting...' : 'Start Pet Custody'}
+              {loading ? "Starting..." : "Start Pet Custody"}
             </button>
-            
-            <button
-              className="cancel-custody-btn"
-              onClick={onCancel}
-            >
+
+            <button className="cancel-custody-btn" onClick={onCancel}>
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      {step === 'bot_request' && botInfo && (
+      {step === "bot_request" && botInfo && (
         <div className="bot-request-step">
           <div className="step-header">
             <h3>📱 Friend Request Sent!</h3>
@@ -224,7 +248,9 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
             <h4>Next Steps:</h4>
             <ol>
               <li>Check your Roblox friend requests</li>
-              <li>Accept request from <strong>{botInfo.username}</strong></li>
+              <li>
+                Accept request from <strong>{botInfo.username}</strong>
+              </li>
               <li>Wait for the next step</li>
             </ol>
           </div>
@@ -232,18 +258,26 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
           <div className="manual-actions">
             <button
               className="open-roblox-btn"
-              onClick={() => window.open('https://www.roblox.com/users/friends#!/friend-requests', '_blank')}
+              onClick={() =>
+                window.open(
+                  "https://www.roblox.com/users/friends#!/friend-requests",
+                  "_blank"
+                )
+              }
             >
               Open Roblox Friends
             </button>
-            
+
             <button
               className="skip-test-btn"
               onClick={() => {
                 // Skip to next step for testing
                 if (custodyRequest) {
-                  setCustodyRequest({...custodyRequest, status: 'friend_accepted'});
-                  setStep('waiting_trade');
+                  setCustodyRequest({
+                    ...custodyRequest,
+                    status: "friend_accepted",
+                  });
+                  setStep("waiting_trade");
                 }
               }}
             >
@@ -253,14 +287,18 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
 
           {custodyRequest && (
             <div className="custody-status">
-              <p><strong>Custody ID:</strong> {custodyRequest.custodyId}</p>
-              <p><strong>Status:</strong> Waiting for friend acceptance</p>
+              <p>
+                <strong>Custody ID:</strong> {custodyRequest.custodyId}
+              </p>
+              <p>
+                <strong>Status:</strong> Waiting for friend acceptance
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'waiting_trade' && (
+      {step === "waiting_trade" && (
         <div className="waiting-trade-step">
           <div className="step-header">
             <h3>🎮 Ready for Pet Transfer!</h3>
@@ -271,36 +309,45 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
             <h4>Instructions:</h4>
             <ol>
               <li>Click "Join Game" below</li>
-              <li>Wait for <strong>{botInfo?.username}</strong> to join your server</li>
+              <li>
+                Wait for <strong>{botInfo?.username}</strong> to join your
+                server
+              </li>
               <li>The bot will send you a trade request</li>
-              <li>Trade your <strong>{petData.name}</strong> to the bot</li>
+              <li>
+                Trade your <strong>{petData.name}</strong> to the bot
+              </li>
               <li>Do NOT ask for anything in return</li>
             </ol>
           </div>
 
           <div className="important-note">
             <h4>⚠️ Important:</h4>
-            <p>Only trade the exact pet you're listing: <strong>{petData.name}</strong></p>
+            <p>
+              Only trade the exact pet you're listing:{" "}
+              <strong>{petData.name}</strong>
+            </p>
             <p>The bot will verify the pet matches your listing.</p>
           </div>
 
-          <button
-            className="join-game-btn"
-            onClick={handleJoinGame}
-          >
+          <button className="join-game-btn" onClick={handleJoinGame}>
             🚀 Join Pet Simulator 99
           </button>
 
           {custodyRequest && (
             <div className="custody-status">
-              <p><strong>Custody ID:</strong> {custodyRequest.custodyId}</p>
-              <p><strong>Status:</strong> Waiting for pet trade</p>
+              <p>
+                <strong>Custody ID:</strong> {custodyRequest.custodyId}
+              </p>
+              <p>
+                <strong>Status:</strong> Waiting for pet trade
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'verifying' && (
+      {step === "verifying" && (
         <div className="verifying-step">
           <div className="step-header">
             <h3>🔍 Verifying Pet...</h3>
@@ -319,19 +366,23 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
 
           {custodyRequest && (
             <div className="custody-status">
-              <p><strong>Custody ID:</strong> {custodyRequest.custodyId}</p>
-              <p><strong>Status:</strong> Verifying pet</p>
+              <p>
+                <strong>Custody ID:</strong> {custodyRequest.custodyId}
+              </p>
+              <p>
+                <strong>Status:</strong> Verifying pet
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'complete' && (
+      {step === "complete" && (
         <div className="custody-complete">
           <div className="success-animation">
             <div className="success-icon">✅</div>
           </div>
-          
+
           <h3>🎉 Pet Custody Complete!</h3>
           <p>Your pet is now safely in bot custody and ready for sale!</p>
 
@@ -363,14 +414,14 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
           <div className="completion-actions">
             <button
               className="view-listing-btn"
-              onClick={() => window.location.href = '/marketplace'}
+              onClick={() => (window.location.href = "/marketplace")}
             >
               View Marketplace
             </button>
-            
+
             <button
               className="manage-listings-btn"
-              onClick={() => window.location.href = '/listings'}
+              onClick={() => (window.location.href = "/listings")}
             >
               Manage My Listings
             </button>
@@ -378,28 +429,25 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
         </div>
       )}
 
-      {step === 'error' && (
+      {step === "error" && (
         <div className="custody-error-step">
           <div className="error-icon">❌</div>
           <h3>Custody Failed</h3>
-          <p>{error || 'Something went wrong with the custody process.'}</p>
+          <p>{error || "Something went wrong with the custody process."}</p>
 
           <div className="error-actions">
             <button
               className="retry-btn"
               onClick={() => {
-                setStep('instructions');
-                setError('');
+                setStep("instructions");
+                setError("");
                 setCustodyRequest(null);
               }}
             >
               Try Again
             </button>
-            
-            <button
-              className="cancel-btn"
-              onClick={onCancel}
-            >
+
+            <button className="cancel-btn" onClick={onCancel}>
               Cancel
             </button>
           </div>

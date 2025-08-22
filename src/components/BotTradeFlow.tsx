@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
-import { BotTradingService } from '../services/botTradingService';
-import { RobloxTeleportService } from '../services/robloxTeleport';
-import './BotTradeFlow.css';
+import React, { useState, useEffect } from "react";
+import { useTraditionalAuth } from "../hooks/useTraditionalAuth";
+import { BotTradingService } from "../services/botTradingService";
+import { RobloxTeleportService } from "../services/robloxTeleport";
+import "./BotTradeFlow.css";
 
 interface BotTradeFlowProps {
   petId: string;
@@ -18,15 +18,27 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
   petName,
   sellerId,
   price,
-  gameId = '8737899170',
-  onTradeComplete
+  gameId = "8737899170",
+  onTradeComplete,
 }) => {
   const { user } = useTraditionalAuth();
-  const [step, setStep] = useState<'confirm' | 'processing' | 'friend_request' | 'join_game' | 'trading' | 'complete' | 'error'>('confirm');
+  const { getActiveAccount } = useTraditionalAuth();
+  const activeAccount = getActiveAccount();
+  const [step, setStep] = useState<
+    | "confirm"
+    | "processing"
+    | "friend_request"
+    | "join_game"
+    | "trading"
+    | "complete"
+    | "error"
+  >("confirm");
   const [tradeRequest, setTradeRequest] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState("");
+  const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   useEffect(() => {
     // Cleanup polling on unmount
@@ -39,15 +51,15 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
 
   const handleInitiateTrade = async () => {
     if (!user) {
-      setError('Please login to use bot trading.');
+      setError("Please login to use bot trading.");
       return;
     }
 
-    // Use username as fallback if no Roblox username is linked
-    const robloxUsername = user.robloxUsername || user.username;
+    // Use active account username as fallback if no Roblox account is linked
+    const robloxUsername = activeAccount?.robloxUsername || user.username;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const trade = await BotTradingService.initiateBotTrade(
@@ -61,14 +73,13 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
       );
 
       setTradeRequest(trade);
-      setStep('processing');
+      setStep("processing");
 
       // Start status polling
       startStatusPolling(trade.id);
-
     } catch (err: any) {
-      setError(err.message || 'Failed to initiate trade');
-      setStep('error');
+      setError(err.message || "Failed to initiate trade");
+      setStep("error");
     } finally {
       setLoading(false);
     }
@@ -81,29 +92,29 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
         setTradeRequest(status);
 
         switch (status.status) {
-          case 'friend_request_sent':
-            setStep('friend_request');
+          case "friend_request_sent":
+            setStep("friend_request");
             break;
-          case 'friend_accepted':
-            setStep('join_game');
+          case "friend_accepted":
+            setStep("join_game");
             break;
-          case 'in_game':
-          case 'trading':
-            setStep('trading');
+          case "in_game":
+          case "trading":
+            setStep("trading");
             break;
-          case 'completed':
-            setStep('complete');
+          case "completed":
+            setStep("complete");
             clearInterval(interval);
             if (onTradeComplete) onTradeComplete();
             break;
-          case 'failed':
-            setStep('error');
-            setError('Trade failed. Please contact support.');
+          case "failed":
+            setStep("error");
+            setError("Trade failed. Please contact support.");
             clearInterval(interval);
             break;
         }
       } catch (err) {
-        console.error('Error polling trade status:', err);
+        console.error("Error polling trade status:", err);
       }
     }, 3000); // Poll every 3 seconds
 
@@ -112,10 +123,10 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
 
   const handleJoinGame = () => {
     if (!tradeRequest) return;
-    
+
     // Teleport to game
     RobloxTeleportService.teleportToGame(gameId);
-    
+
     // Notify backend that user is joining
     BotTradingService.joinBuyerServer(tradeRequest.id);
   };
@@ -126,7 +137,7 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
     try {
       await BotTradingService.sendFriendRequest(tradeRequest.id);
     } catch (err: any) {
-      setError(err.message || 'Failed to send friend request');
+      setError(err.message || "Failed to send friend request");
     }
   };
 
@@ -138,13 +149,17 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
     );
   }
 
-  const botInfo = tradeRequest ? BotTradingService.getBotInfo(tradeRequest.botId) : null;
-  const instructions = tradeRequest ? BotTradingService.generateBuyerInstructions(tradeRequest) : [];
+  const botInfo = tradeRequest
+    ? BotTradingService.getBotInfo(tradeRequest.botId)
+    : null;
+  const instructions = tradeRequest
+    ? BotTradingService.generateBuyerInstructions(tradeRequest)
+    : [];
   const estimatedWait = BotTradingService.getEstimatedWaitTime(gameId);
 
   return (
     <div className="bot-trade-flow">
-      {step === 'confirm' && (
+      {step === "confirm" && (
         <div className="trade-confirm">
           <div className="trade-header">
             <h3>🤖 Bot Trading System</h3>
@@ -202,27 +217,35 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
             onClick={handleInitiateTrade}
             disabled={loading || (user.balance < price && price > 0)}
           >
-            {loading ? 'Processing...' : price === 0 ? 'Start Test Trade' : 'Start Bot Trade'}
+            {loading
+              ? "Processing..."
+              : price === 0
+              ? "Start Test Trade"
+              : "Start Bot Trade"}
           </button>
         </div>
       )}
 
-      {step === 'processing' && (
+      {step === "processing" && (
         <div className="trade-processing">
           <div className="loading-spinner">🔄</div>
           <h3>Setting Up Your Trade...</h3>
           <p>Finding available bot and preparing your pet delivery.</p>
-          
+
           {tradeRequest && (
             <div className="trade-info">
-              <p><strong>Trade ID:</strong> {tradeRequest.accessCode}</p>
-              <p><strong>Status:</strong> Initializing...</p>
+              <p>
+                <strong>Trade ID:</strong> {tradeRequest.accessCode}
+              </p>
+              <p>
+                <strong>Status:</strong> Initializing...
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'friend_request' && botInfo && (
+      {step === "friend_request" && botInfo && (
         <div className="friend-request-step">
           <div className="step-header">
             <h3>📱 Friend Request Sent!</h3>
@@ -241,7 +264,9 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
             <h4>Next Steps:</h4>
             <ol>
               <li>Check your Roblox friend requests</li>
-              <li>Accept request from <strong>{botInfo.robloxUsername}</strong></li>
+              <li>
+                Accept request from <strong>{botInfo.robloxUsername}</strong>
+              </li>
               <li>The system will automatically detect when you accept</li>
             </ol>
           </div>
@@ -249,11 +274,16 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
           <div className="manual-actions">
             <button
               className="open-roblox-btn"
-              onClick={() => window.open('https://www.roblox.com/users/friends#!/friend-requests', '_blank')}
+              onClick={() =>
+                window.open(
+                  "https://www.roblox.com/users/friends#!/friend-requests",
+                  "_blank"
+                )
+              }
             >
               Open Roblox Friends
             </button>
-            
+
             <button
               className="resend-request-btn"
               onClick={handleSendFriendRequest}
@@ -264,14 +294,18 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
 
           {tradeRequest && (
             <div className="trade-status">
-              <p><strong>Trade ID:</strong> {tradeRequest.accessCode}</p>
-              <p><strong>Status:</strong> Waiting for friend acceptance</p>
+              <p>
+                <strong>Trade ID:</strong> {tradeRequest.accessCode}
+              </p>
+              <p>
+                <strong>Status:</strong> Waiting for friend acceptance
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'join_game' && (
+      {step === "join_game" && (
         <div className="join-game-step">
           <div className="step-header">
             <h3>🎮 Ready to Trade!</h3>
@@ -283,28 +317,31 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
             <ol>
               <li>Click "Join Game" below</li>
               <li>Join any Pet Simulator 99 server</li>
-              <li>Wait for <strong>{botInfo?.robloxUsername}</strong> to join</li>
+              <li>
+                Wait for <strong>{botInfo?.robloxUsername}</strong> to join
+              </li>
               <li>Bot will automatically trade you the pet</li>
             </ol>
           </div>
 
-          <button
-            className="join-game-btn"
-            onClick={handleJoinGame}
-          >
+          <button className="join-game-btn" onClick={handleJoinGame}>
             🚀 Join Pet Simulator 99
           </button>
 
           {tradeRequest && (
             <div className="trade-status">
-              <p><strong>Trade ID:</strong> {tradeRequest.accessCode}</p>
-              <p><strong>Status:</strong> Ready for game</p>
+              <p>
+                <strong>Trade ID:</strong> {tradeRequest.accessCode}
+              </p>
+              <p>
+                <strong>Status:</strong> Ready for game
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'trading' && (
+      {step === "trading" && (
         <div className="trading-step">
           <div className="step-header">
             <h3>⚡ Trading in Progress!</h3>
@@ -320,28 +357,38 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
           </div>
 
           <div className="trading-status">
-            <p>🤖 <strong>{botInfo?.robloxUsername}</strong> is in your server</p>
-            <p>⚡ Trading <strong>{petName}</strong> to you now...</p>
+            <p>
+              🤖 <strong>{botInfo?.robloxUsername}</strong> is in your server
+            </p>
+            <p>
+              ⚡ Trading <strong>{petName}</strong> to you now...
+            </p>
             <p>📦 Please accept the trade request in-game</p>
           </div>
 
           {tradeRequest && (
             <div className="trade-info">
-              <p><strong>Trade ID:</strong> {tradeRequest.accessCode}</p>
-              <p><strong>Status:</strong> {tradeRequest.status}</p>
+              <p>
+                <strong>Trade ID:</strong> {tradeRequest.accessCode}
+              </p>
+              <p>
+                <strong>Status:</strong> {tradeRequest.status}
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {step === 'complete' && (
+      {step === "complete" && (
         <div className="trade-complete">
           <div className="success-animation">
             <div className="success-icon">✅</div>
           </div>
-          
+
           <h3>🎉 Trade Complete!</h3>
-          <p>You have successfully received <strong>{petName}</strong>!</p>
+          <p>
+            You have successfully received <strong>{petName}</strong>!
+          </p>
 
           <div className="completion-details">
             <div className="detail-item">
@@ -361,14 +408,14 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
           <div className="post-trade-actions">
             <button
               className="continue-shopping-btn"
-              onClick={() => window.location.href = '/marketplace'}
+              onClick={() => (window.location.href = "/marketplace")}
             >
               Continue Shopping
             </button>
-            
+
             <button
               className="view-orders-btn"
-              onClick={() => window.location.href = '/orders'}
+              onClick={() => (window.location.href = "/orders")}
             >
               View My Orders
             </button>
@@ -385,27 +432,27 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
         </div>
       )}
 
-      {step === 'error' && (
+      {step === "error" && (
         <div className="trade-error-step">
           <div className="error-icon">❌</div>
           <h3>Trade Failed</h3>
-          <p>{error || 'Something went wrong with your trade.'}</p>
+          <p>{error || "Something went wrong with your trade."}</p>
 
           <div className="error-actions">
             <button
               className="retry-btn"
               onClick={() => {
-                setStep('confirm');
-                setError('');
+                setStep("confirm");
+                setError("");
                 setTradeRequest(null);
               }}
             >
               Try Again
             </button>
-            
+
             <button
               className="support-btn"
-              onClick={() => window.open('/support', '_blank')}
+              onClick={() => window.open("/support", "_blank")}
             >
               Contact Support
             </button>
@@ -413,7 +460,9 @@ const BotTradeFlow: React.FC<BotTradeFlowProps> = ({
 
           {tradeRequest && (
             <div className="error-info">
-              <p><strong>Trade ID:</strong> {tradeRequest.accessCode}</p>
+              <p>
+                <strong>Trade ID:</strong> {tradeRequest.accessCode}
+              </p>
               <p>Please provide this ID when contacting support.</p>
             </div>
           )}

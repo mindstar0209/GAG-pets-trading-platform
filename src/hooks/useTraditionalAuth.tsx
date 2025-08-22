@@ -9,6 +9,8 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import { RobloxCookieAuthService } from "../services/robloxCookieAuth";
+import { RobloxAccount, LinkedAccounts } from "../types";
 
 interface AppUser {
   uid: string;
@@ -19,8 +21,8 @@ interface AppUser {
   balance: number;
   createdAt: Date;
   lastLogin: Date;
-  robloxUsername?: string; // Optional Roblox username for teleportation
-  isRobloxVerified?: boolean; // Whether they've verified their Roblox account
+  // Multi-account management
+  linkedAccounts?: LinkedAccounts;
 }
 
 interface TraditionalAuthContextType {
@@ -36,7 +38,24 @@ interface TraditionalAuthContextType {
   login: (email: string, password: string) => Promise<AppUser>;
   logout: () => Promise<void>;
   updateUserBalance: (newBalance: number) => Promise<void>;
+  // Roblox account linking methods
   linkRobloxAccount: (robloxUsername: string) => Promise<void>;
+  linkRobloxAccountWithCookie: (cookie: string) => Promise<void>;
+  verifyRobloxAccount: () => Promise<void>;
+  // Multi-account management methods
+  addRobloxAccount: (
+    accountData: Omit<RobloxAccount, "id" | "linkedAt" | "lastUsed">
+  ) => Promise<RobloxAccount>;
+  removeRobloxAccount: (accountId: string) => Promise<void>;
+  setActiveAccount: (accountId: string) => Promise<void>;
+  freezeAccount: (accountId: string) => Promise<void>;
+  unfreezeAccount: (accountId: string) => Promise<void>;
+  updateAccountPermissions: (
+    accountId: string,
+    permissions: Partial<RobloxAccount["permissions"]>
+  ) => Promise<void>;
+  getActiveAccount: () => RobloxAccount | null;
+  getAllAccounts: () => RobloxAccount[];
   clearError: () => void;
 }
 
@@ -63,6 +82,67 @@ export const TraditionalAuthProvider: React.FC<{
             const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
             if (userDoc.exists()) {
               const userData = userDoc.data();
+
+              // Check if we need to migrate legacy Roblox account to multi-account system
+              const needsMigration =
+                userData.robloxUsername && !userData.linkedAccounts;
+
+              if (needsMigration) {
+                console.log(
+                  "Migrating legacy Roblox account to multi-account system"
+                );
+
+                // Create account data for migration
+                const accountData: Omit<
+                  RobloxAccount,
+                  "id" | "linkedAt" | "lastUsed"
+                > = {
+                  robloxUserId: userData.robloxUserId?.toString() || "",
+                  robloxUsername: userData.robloxUsername || "",
+                  displayName:
+                    userData.displayName || userData.robloxUsername || "",
+                  avatarUrl: userData.robloxAvatar || "",
+                  isVerified: userData.isRobloxVerified || false,
+                  isActive: true,
+                  isFrozen: false,
+                  cookie: userData.robloxCookie,
+                  verificationMethod: userData.robloxCookie
+                    ? "cookie"
+                    : "username",
+                  permissions: {
+                    canTrade: true,
+                    canTeleport: true,
+                    canAccessInventory: !!userData.robloxCookie,
+                  },
+                };
+
+                // Create linked accounts structure
+                const primaryAccount: RobloxAccount = {
+                  ...accountData,
+                  id: `roblox_${userData.robloxUserId || Date.now()}_migrated`,
+                  linkedAt: new Date(),
+                  lastUsed: new Date(),
+                };
+
+                const linkedAccounts: LinkedAccounts = {
+                  accounts: [primaryAccount],
+                  maxAccounts: 5,
+                  totalAccounts: 1,
+                };
+
+                // Update Firestore with migrated data
+                await setDoc(
+                  doc(db, "users", firebaseUser.uid),
+                  {
+                    linkedAccounts,
+                  },
+                  { merge: true }
+                );
+
+                // Update userData with migrated data
+                userData.linkedAccounts = linkedAccounts;
+              }
+
               setUser({
                 uid: firebaseUser.uid,
                 username: userData.username,
@@ -72,8 +152,7 @@ export const TraditionalAuthProvider: React.FC<{
                 balance: userData.balance || 0,
                 createdAt: userData.createdAt?.toDate() || new Date(),
                 lastLogin: userData.lastLogin?.toDate() || new Date(),
-                robloxUsername: userData.robloxUsername,
-                isRobloxVerified: userData.isRobloxVerified || false,
+                linkedAccounts: userData.linkedAccounts,
               });
             }
           } catch (error) {
@@ -118,9 +197,6 @@ export const TraditionalAuthProvider: React.FC<{
         throw new Error("Password must be at least 6 characters long");
       }
 
-      // Check if username is already taken
-      // Note: In a real app, you'd want to check this server-side
-
       // Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -141,7 +217,6 @@ export const TraditionalAuthProvider: React.FC<{
         balance: 0,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
-        isRobloxVerified: false,
       };
 
       await setDoc(doc(db, "users", userCredential.user.uid), userData);
@@ -154,7 +229,6 @@ export const TraditionalAuthProvider: React.FC<{
         balance: 0,
         createdAt: new Date(),
         lastLogin: new Date(),
-        isRobloxVerified: false,
       };
 
       setUser(newUser);
@@ -259,29 +333,419 @@ export const TraditionalAuthProvider: React.FC<{
         throw new Error("Invalid Roblox username format");
       }
 
-      // Update user document with Roblox username
-      await setDoc(
-        doc(db, "users", firebaseUser.uid),
-        {
-          robloxUsername,
-          isRobloxVerified: false, // Will need to verify ownership
-        },
-        { merge: true }
-      );
-
-      setUser({
-        ...user,
-        robloxUsername,
-        isRobloxVerified: false,
+      // Get Roblox user data from API
+      const response = await fetch("/api/auth/roblox/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: robloxUsername }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Failed to validate Roblox username"
+        );
+      }
+
+      const robloxData = await response.json();
+
+      // Create account data for multi-account system
+      const accountData: Omit<RobloxAccount, "id" | "linkedAt" | "lastUsed"> = {
+        robloxUserId: robloxData.robloxId,
+        robloxUsername: robloxData.robloxUsername,
+        displayName: robloxData.displayName || robloxData.robloxUsername,
+        avatarUrl: robloxData.avatarUrl,
+        isVerified: false, // Must verify through status
+        isActive: true, // Set as active since it's the first account
+        isFrozen: false,
+        verificationMethod: "username",
+        permissions: {
+          canTrade: true,
+          canTeleport: true,
+          canAccessInventory: false, // No inventory access without cookie
+        },
+      };
+
+      // Add to multi-account system
+      await addRobloxAccount(accountData);
     } catch (error: any) {
       console.error("Error linking Roblox account:", error);
       throw error;
     }
   };
 
+  const linkRobloxAccountWithCookie = async (cookie: string) => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      // Validate cookie format
+      const cookieValidation =
+        RobloxCookieAuthService.validateCookieFormat(cookie);
+      if (!cookieValidation.valid) {
+        throw new Error(cookieValidation.error || "Invalid cookie format");
+      }
+
+      // Extract and validate the cookie with Roblox
+      const profileData =
+        await RobloxCookieAuthService.validateCookieAndGetProfile(cookie);
+
+      if (!profileData.success) {
+        throw new Error(
+          profileData.error || "Failed to validate Roblox cookie"
+        );
+      }
+
+      // Encrypt cookie for storage (in production, use proper encryption)
+      const encryptedCookie = btoa(cookie); // Simple base64 encoding for demo
+
+      // Create account data for multi-account system
+      const accountData: Omit<RobloxAccount, "id" | "linkedAt" | "lastUsed"> = {
+        robloxUserId: profileData.userid?.toString() || "",
+        robloxUsername: profileData.username || "",
+        displayName: profileData.display_name || profileData.username || "",
+        avatarUrl: profileData.user_avatar_picture || "",
+        isVerified: true, // Cookie validation means verified
+        isActive: true, // Set as active since it's the first account
+        isFrozen: false,
+        cookie: encryptedCookie,
+        verificationMethod: "cookie",
+        permissions: {
+          canTrade: true,
+          canTeleport: true,
+          canAccessInventory: true, // Full access with cookie
+        },
+      };
+
+      // Add to multi-account system
+      await addRobloxAccount(accountData);
+    } catch (error: any) {
+      console.error("Error linking Roblox account with cookie:", error);
+      throw error;
+    }
+  };
+
+  const verifyRobloxAccount = async () => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      // Update the multi-account system if there are linked accounts
+      if (
+        user.linkedAccounts?.accounts &&
+        user.linkedAccounts.accounts.length > 0
+      ) {
+        const updatedAccounts = user.linkedAccounts.accounts.map((account) => ({
+          ...account,
+          isVerified: true,
+        }));
+
+        const updatedLinkedAccounts: LinkedAccounts = {
+          accounts: updatedAccounts,
+          maxAccounts: user.linkedAccounts.maxAccounts,
+          totalAccounts: user.linkedAccounts.totalAccounts,
+        };
+
+        await setDoc(
+          doc(db, "users", firebaseUser.uid),
+          {
+            linkedAccounts: updatedLinkedAccounts,
+          },
+          { merge: true }
+        );
+
+        setUser({
+          ...user,
+          linkedAccounts: updatedLinkedAccounts,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error verifying Roblox account:", error);
+      throw error;
+    }
+  };
+
   const clearError = () => {
     setError(null);
+  };
+
+  // Multi-account management methods
+  const addRobloxAccount = async (
+    accountData: Omit<RobloxAccount, "id" | "linkedAt" | "lastUsed">
+  ): Promise<RobloxAccount> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const accountId = `roblox_${accountData.robloxUserId}_${Date.now()}`;
+      const now = new Date();
+
+      const newAccount: RobloxAccount = {
+        ...accountData,
+        id: accountId,
+        linkedAt: now,
+        lastUsed: now,
+      };
+
+      // If this is the first account, set it as active
+      if (
+        !user.linkedAccounts?.accounts ||
+        user.linkedAccounts.accounts.length === 0
+      ) {
+        newAccount.isActive = true;
+      } else {
+        // If there are existing accounts, set all others as inactive
+        newAccount.isActive = false;
+      }
+
+      // Add account to user's linked accounts
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.map((account) => ({
+        ...account,
+        isActive: false, // Set all existing accounts as inactive
+      }));
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: [...updatedAccounts, newAccount],
+        maxAccounts: 5, // Default max accounts
+        totalAccounts: (user.linkedAccounts?.totalAccounts || 0) + 1,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+
+      return newAccount;
+    } catch (error: any) {
+      console.error("Error adding Roblox account:", error);
+      throw error;
+    }
+  };
+
+  const removeRobloxAccount = async (accountId: string): Promise<void> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.filter(
+        (account: RobloxAccount) => account.id !== accountId
+      );
+
+      // If we removed the active account and there are other accounts, set the first one as active
+      if (updatedAccounts.length > 0) {
+        const wasActiveRemoved = existingAccounts.find(
+          (account: RobloxAccount) => account.id === accountId
+        )?.isActive;
+
+        if (wasActiveRemoved) {
+          updatedAccounts[0].isActive = true;
+        }
+      }
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: updatedAccounts,
+        maxAccounts: user.linkedAccounts?.maxAccounts || 5,
+        totalAccounts: (user.linkedAccounts?.totalAccounts || 1) - 1,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+    } catch (error: any) {
+      console.error("Error removing Roblox account:", error);
+      throw error;
+    }
+  };
+
+  const setActiveAccount = async (accountId: string): Promise<void> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.map(
+        (account: RobloxAccount) => ({
+          ...account,
+          isActive: account.id === accountId,
+        })
+      );
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: updatedAccounts,
+        maxAccounts: user.linkedAccounts?.maxAccounts || 5,
+        totalAccounts: user.linkedAccounts?.totalAccounts || 0,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+    } catch (error: any) {
+      console.error("Error setting active account:", error);
+      throw error;
+    }
+  };
+
+  const freezeAccount = async (accountId: string): Promise<void> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.map(
+        (account: RobloxAccount) => ({
+          ...account,
+          isFrozen: account.id === accountId ? true : account.isFrozen,
+        })
+      );
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: updatedAccounts,
+        maxAccounts: user.linkedAccounts?.maxAccounts || 5,
+        totalAccounts: user.linkedAccounts?.totalAccounts || 0,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+    } catch (error: any) {
+      console.error("Error freezing account:", error);
+      throw error;
+    }
+  };
+
+  const unfreezeAccount = async (accountId: string): Promise<void> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.map(
+        (account: RobloxAccount) => ({
+          ...account,
+          isFrozen: account.id === accountId ? false : account.isFrozen,
+        })
+      );
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: updatedAccounts,
+        maxAccounts: user.linkedAccounts?.maxAccounts || 5,
+        totalAccounts: user.linkedAccounts?.totalAccounts || 0,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+    } catch (error: any) {
+      console.error("Error unfreezing account:", error);
+      throw error;
+    }
+  };
+
+  const updateAccountPermissions = async (
+    accountId: string,
+    permissions: Partial<RobloxAccount["permissions"]>
+  ): Promise<void> => {
+    if (!user || !firebaseUser) throw new Error("Not authenticated");
+
+    try {
+      const existingAccounts = user.linkedAccounts?.accounts || [];
+      const updatedAccounts = existingAccounts.map(
+        (account: RobloxAccount) => ({
+          ...account,
+          permissions:
+            account.id === accountId
+              ? { ...account.permissions, ...permissions }
+              : account.permissions,
+        })
+      );
+
+      const updatedLinkedAccounts: LinkedAccounts = {
+        accounts: updatedAccounts,
+        maxAccounts: user.linkedAccounts?.maxAccounts || 5,
+        totalAccounts: user.linkedAccounts?.totalAccounts || 0,
+      };
+
+      // Update Firestore
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          linkedAccounts: updatedLinkedAccounts,
+        },
+        { merge: true }
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        linkedAccounts: updatedLinkedAccounts,
+      });
+    } catch (error: any) {
+      console.error("Error updating account permissions:", error);
+      throw error;
+    }
+  };
+
+  const getActiveAccount = (): RobloxAccount | null => {
+    if (!user?.linkedAccounts?.accounts) return null;
+
+    return (
+      user.linkedAccounts.accounts.find((account) => account.isActive) || null
+    );
+  };
+
+  const getAllAccounts = (): RobloxAccount[] => {
+    if (!user?.linkedAccounts?.accounts) return [];
+
+    return user.linkedAccounts.accounts;
   };
 
   return (
@@ -296,6 +760,16 @@ export const TraditionalAuthProvider: React.FC<{
         logout,
         updateUserBalance,
         linkRobloxAccount,
+        linkRobloxAccountWithCookie,
+        verifyRobloxAccount,
+        addRobloxAccount,
+        removeRobloxAccount,
+        setActiveAccount,
+        freezeAccount,
+        unfreezeAccount,
+        updateAccountPermissions,
+        getActiveAccount,
+        getAllAccounts,
         clearError,
       }}
     >

@@ -1,0 +1,301 @@
+.roblox-cookie-linker {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.roblox-cookie-linker-error {
+  text-align: center;
+  padding: 20px;
+  color: #e74c3c;
+  background: #fdf2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.linker-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.linker-header h3 {
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.linker-header p {
+  color: #7f8c8d;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.linker-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.form-textarea {
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s ease;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-help {
+  color: #7f8c8d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cookie-warning {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.warning-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-content strong {
+  color: #856404;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.warning-content ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.warning-content li {
+  margin-bottom: 4px;
+}
+
+.linker-error {
+  padding: 12px;
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+.linker-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.linker-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.linker-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.linker-benefits {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.linker-benefits h4 {
+  color: #2c3e50;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.linker-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.linker-benefits li {
+  padding: 8px 0;
+  color: #34495e;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linking-complete {
+  text-align: center;
+  padding: 20px;
+}
+
+.success-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.linking-complete h4 {
+  color: #27ae60;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 24px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.profile-avatar img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #3498db;
+  object-fit: cover;
+}
+
+.profile-details {
+  text-align: left;
+}
+
+.profile-details h5 {
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.profile-details p {
+  color: #7f8c8d;
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.verified-badge {
+  display: inline-block;
+  background: #27ae60;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.complete-benefits {
+  margin: 24px 0;
+  padding: 20px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  border: 1px solid #c3e6c3;
+}
+
+.complete-benefits p {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.complete-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.complete-benefits li {
+  padding: 6px 0;
+  color: #27ae60;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-another-button {
+  padding: 10px 20px;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.link-another-button:hover {
+  background: #7f8c8d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .roblox-cookie-linker {
+    padding: 16px;
+    margin: 10px;
+  }
+  
+  .profile-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .profile-details {
+    text-align: center;
+  }
+  
+  .form-textarea {
+    font-size: 11px;
+  }
+} 
