@@ -1,0 +1,58 @@
+/* Notification container styles */
+.notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  pointer-events: none;
+  width: 100%;
+  max-width: 400px;
+}
+
+.notification-container .notification {
+  position: relative;
+  transform: none;
+  pointer-events: auto;
+  margin-bottom: 0;
+}
+
+.notification-container .notification.visible {
+  transform: none;
+}
+
+.notification-container .notification.exiting {
+  transform: translateX(100%);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .notification-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+/* Scrollbar styling for notification container */
+.notification-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.notification-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

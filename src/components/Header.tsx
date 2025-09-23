@@ -44,7 +44,7 @@ const Header: React.FC = () => {
                 
                 {showDropdown && (
                   <div className="dropdown-menu">
-                    <Link to="/dashboard" className="dropdown-item">Dashboard</Link>
+                    <Link to="/my-dashboard" className="dropdown-item">My Dashboard</Link>
                     <Link to="/orders" className="dropdown-item">My Orders</Link>
                     <Link to="/listings" className="dropdown-item">My Listings</Link>
                     <Link to="/settings" className="dropdown-item">Settings</Link>

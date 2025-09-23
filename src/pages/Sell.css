@@ -287,3 +287,38 @@ ote {
 .test-icon {
   margin-right: 8px;
 }
+
+/* Status container */
+.sell-status-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.status-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.status-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.status-actions .btn {
+  min-width: 150px;
+}
+
+@media (max-width: 768px) {
+  .status-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .status-actions .btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}

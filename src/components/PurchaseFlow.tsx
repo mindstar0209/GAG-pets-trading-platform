@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useSimplifiedRobloxAuth } from '../hooks/useRobloxAuth';
 import { createTrade } from '../utils/tradingService';
 import { Trade } from '../types/trading';
+import { TransactionService } from '../services/transactionService';
+import { MarketplaceService } from '../services/marketplaceService';
 import TradingFlow from './TradingFlow';
 import './PurchaseFlow.css';
 
@@ -12,6 +14,7 @@ interface Pet {
   price: number;
   sellerRobloxUsername: string;
   sellerId: string;
+  sellerName: string;
   imageUrl: string;
 }
 
@@ -37,8 +40,29 @@ const PurchaseFlow: React.FC<PurchaseFlowProps> = ({ pet, onClose, onPurchaseCom
     setError(null);
     
     try {
+      // Check if user has sufficient balance
+      const totalCost = pet.price * 1.05; // Including 5% service fee
+      if ((user?.balance || 0) < totalCost) {
+        throw new Error('Insufficient funds');
+      }
+
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Record purchase transaction
+      await TransactionService.recordPurchase(
+        user?.uid || '',
+        pet.id,
+        pet.name,
+        totalCost,
+        pet.sellerId,
+        pet.sellerName || 'Unknown Seller'
+      );
+
+      // Update user balance (deduct the cost)
+      const newBalance = (user?.balance || 0) - totalCost;
+      // Note: In a real app, you would call the user service to update balance
+      // For now, we'll just record the transaction
       
       // Create trade with bot
       const trade = await createTrade(

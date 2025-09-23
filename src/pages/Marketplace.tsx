@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Pet } from '../types';
 import PetCard from '../components/PetCard';
@@ -20,17 +20,12 @@ const Marketplace: React.FC = () => {
     mega: false
   });
 
-  useEffect(() => {
-    fetchPets();
-  }, [filters]);
-
-  const fetchPets = async () => {
+  const fetchPets = useCallback(async () => {
     setLoading(true);
     try {
       let q = query(
         collection(db, 'pets'),
         where('listed', '==', true),
-        orderBy('createdAt', 'desc'),
         limit(50)
       );
 
@@ -39,30 +34,44 @@ const Marketplace: React.FC = () => {
       
       querySnapshot.forEach((doc) => {
         const pet = { id: doc.id, ...doc.data() } as Pet;
-        
-        if (filters.search && !pet.name.toLowerCase().includes(filters.search.toLowerCase())) return;
-        if (filters.type && pet.type !== filters.type) return;
-        if (filters.rarity && pet.rarity !== filters.rarity) return;
-        if (filters.age && pet.age !== filters.age) return;
-        if (filters.minPrice && pet.price < parseFloat(filters.minPrice)) return;
-        if (filters.maxPrice && pet.price > parseFloat(filters.maxPrice)) return;
-        if (filters.neon && !pet.neon) return;
-        if (filters.mega && !pet.mega) return;
-        if (filters.flyRide) {
-          if (filters.flyRide === 'fly' && !pet.flyRide?.fly) return;
-          if (filters.flyRide === 'ride' && !pet.flyRide?.ride) return;
-          if (filters.flyRide === 'flyride' && (!pet.flyRide?.fly || !pet.flyRide?.ride)) return;
-        }
-        
         petsData.push(pet);
       });
 
-      setPets(petsData);
+      // Apply filters and sorting on the client side
+      const filteredPets = petsData.filter(pet => {
+        if (filters.search && !pet.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+        if (filters.type && pet.type !== filters.type) return false;
+        if (filters.rarity && pet.rarity !== filters.rarity) return false;
+        if (filters.age && pet.age !== filters.age) return false;
+        if (filters.minPrice && pet.price < parseFloat(filters.minPrice)) return false;
+        if (filters.maxPrice && pet.price > parseFloat(filters.maxPrice)) return false;
+        if (filters.neon && !pet.neon) return false;
+        if (filters.mega && !pet.mega) return false;
+        if (filters.flyRide) {
+          if (filters.flyRide === 'fly' && !pet.flyRide?.fly) return false;
+          if (filters.flyRide === 'ride' && !pet.flyRide?.ride) return false;
+          if (filters.flyRide === 'flyride' && (!pet.flyRide?.fly || !pet.flyRide?.ride)) return false;
+        }
+        return true;
+      });
+
+      // Sort by creation date (newest first)
+      filteredPets.sort((a, b) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        return bTime - aTime;
+      });
+
+      setPets(filteredPets);
     } catch (error) {
       console.error('Error fetching pets:', error);
     }
     setLoading(false);
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    fetchPets();
+  }, [fetchPets]);
 
   const petTypes = ['Dog', 'Cat', 'Dragon', 'Unicorn', 'Phoenix', 'Griffin', 'Owl', 'Frost Dragon'];
   const rarities = ['common', 'uncommon', 'rare', 'ultra-rare', 'legendary'];

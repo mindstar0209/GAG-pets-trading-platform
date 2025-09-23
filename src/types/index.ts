@@ -52,6 +52,15 @@ export interface Pet {
   };
   neon?: boolean;
   mega?: boolean;
+  // New fields for sell request integration
+  sellRequestId?: string;
+  verifiedAt?: Date;
+  verifiedBy?: string;
+  sold?: boolean;
+  soldAt?: Date;
+  buyerId?: string;
+  buyerName?: string;
+  removedAt?: Date;
 }
 
 export interface Order {
@@ -73,4 +82,5 @@ export interface Transaction {
   amount: number;
   description: string;
   createdAt: Date;
+  metadata?: any;
 }

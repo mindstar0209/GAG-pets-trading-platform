@@ -1,17 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase/config';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { storage, db } from '../firebase/config';
 import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
+import { useNotification } from '../contexts/NotificationContext';
+import { SellRequestService } from '../services/sellRequestService';
 import PetCustodyFlow from '../components/PetCustodyFlow';
+import SellRequestStatus from '../components/SellRequestStatus';
 import './Sell.css';
 
 const Sell: React.FC = () => {
   const { user, loading: authLoading } = useTraditionalAuth();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'custody'>('form');
+  const [step, setStep] = useState<'form' | 'custody' | 'status'>('form');
+  const [currentSellRequest, setCurrentSellRequest] = useState<any>(null);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+
+  // Real-time status tracking for pending requests
+  useEffect(() => {
+    if (!user || !pendingRequestId) return;
+
+    const q = query(
+      collection(db, 'sellRequests'),
+      where('__name__', '==', pendingRequestId)
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        
+        setCurrentSellRequest({
+          id: doc.id,
+          petName: data.petData?.name || 'Unknown Pet',
+          status: data.status || 'pending',
+          submittedAt: data.requestedAt?.toDate() || new Date()
+        });
+
+        // If request is completed, approved, or rejected, show appropriate message
+        if (data.status === 'verified') {
+          showSuccess('Pet Approved!', 'Your pet has been approved and listed on the marketplace!');
+        } else if (data.status === 'rejected') {
+          showError('Pet Rejected', 'Your pet submission was rejected. Please check the reason and try again.');
+        } else if (data.status === 'completed') {
+          showSuccess('Pet Sold!', 'Your pet has been sold! Credit has been added to your account.');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, pendingRequestId, showSuccess, showError]);
+
+  // Check for existing pending requests on page load
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'sellRequests'),
+      where('sellerId', '==', user.uid),
+      where('status', 'in', ['pending', 'in_custody'])
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        // Sort by requestedAt descending (newest first)
+        const sortedDocs = querySnapshot.docs.sort((a, b) => {
+          const aTime = a.data().requestedAt?.toDate?.() || new Date(0);
+          const bTime = b.data().requestedAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        });
+        
+        const doc = sortedDocs[0];
+        const data = doc.data();
+        
+        setPendingRequestId(doc.id);
+        setCurrentSellRequest({
+          id: doc.id,
+          petName: data.petData?.name || 'Unknown Pet',
+          status: data.status || 'pending',
+          submittedAt: data.requestedAt?.toDate() || new Date()
+        });
+        setStep('status');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -93,43 +171,78 @@ const Sell: React.FC = () => {
 
   const handleCustodyComplete = async (custodyData: any) => {
     try {
-      // Now create the actual pet listing with custody information
+      console.log('Custody completed with data:', custodyData);
+      
+      // Create sell request instead of directly listing the pet
       const petData = {
-        ...petDataForCustody,
+        name: petDataForCustody.name,
+        type: petDataForCustody.type,
+        rarity: petDataForCustody.rarity,
+        age: petDataForCustody.age,
+        price: petDataForCustody.price,
         flyRide: {
           fly: petDataForCustody.fly,
           ride: petDataForCustody.ride
         },
-        sellerId: user!.uid,
-        sellerName: user!.displayName || user!.username || 'Anonymous',
-        listed: true,
-        createdAt: new Date(),
-        // Add custody information
-        custodyInfo: {
-          custodyId: custodyData.custodyId,
-          botId: custodyData.botId,
-          botUsername: custodyData.botInfo?.username,
-          inCustody: true,
-          custodyDate: new Date()
-        },
-        // Add game data for export
-        gameData: {
-          petId: `${user!.uid}-${Date.now()}`,
-          exportFormat: 'json',
-          gameCompatible: true
-        }
+        neon: petDataForCustody.neon,
+        mega: petDataForCustody.mega,
+        description: petDataForCustody.description,
+        imageUrl: petDataForCustody.imageUrl
       };
 
-      await addDoc(collection(db, 'pets'), petData);
-      navigate('/marketplace');
+      const custodyInfo = {
+        custodyId: custodyData.custodyId,
+        staffId: custodyData.staffId || 'pending',
+        staffUsername: custodyData.staffUsername || 'pending',
+        inCustody: true,
+        custodyDate: new Date()
+      };
+
+      console.log('Creating sell request with data:', {
+        sellerId: user!.uid,
+        sellerName: user!.displayName || user!.email || 'Anonymous',
+        sellerEmail: user!.email || '',
+        petData,
+        custodyInfo
+      });
+
+      // Create sell request for staff review
+      const requestId = await SellRequestService.createSellRequest(
+        user!.uid,
+        user!.displayName || user!.email || 'Anonymous',
+        user!.email || '',
+        petData,
+        custodyInfo
+      );
+
+      console.log('Sell request created with ID:', requestId);
+      
+      // Store the sell request for status display
+      setPendingRequestId(requestId);
+      setCurrentSellRequest({
+        id: requestId,
+        petName: petData.name,
+        status: 'pending',
+        submittedAt: new Date()
+      });
+      
+      showSuccess('Sell Request Created!', 'Our staff will review your pet and add it to the marketplace once verified.');
+      setStep('status');
     } catch (error) {
-      console.error('Error creating pet listing:', error);
+      console.error('Error creating sell request:', error);
+      showError('Request Failed', 'Failed to create sell request. Please try again.');
     }
   };
 
   const handleCustodyCancel = () => {
     setStep('form');
     setPetDataForCustody(null);
+  };
+
+  const handleSubmitAnother = () => {
+    setPendingRequestId(null);
+    setCurrentSellRequest(null);
+    setStep('form');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -424,10 +537,10 @@ const Sell: React.FC = () => {
           </div>
         </form>
           </>
-        ) : (
+        ) : step === 'custody' ? (
           <>
-            <h1 className="sell-title">Pet Custody Process</h1>
-            <p className="sell-subtitle">Our bot will safely hold your pet until it's sold</p>
+            <h1 className="sell-title">Pet Trading Process</h1>
+            <p className="sell-subtitle">Our staff will safely handle your pet trading</p>
             
             <PetCustodyFlow
               petData={petDataForCustody!}
@@ -435,6 +548,34 @@ const Sell: React.FC = () => {
               onCancel={handleCustodyCancel}
             />
           </>
+        ) : (
+          <div className="sell-status-container">
+            <div className="status-header">
+              <h1 className="sell-title">Pet Submission Status</h1>
+              <p className="sell-subtitle">Track the progress of your pet submission</p>
+            </div>
+            
+            <SellRequestStatus
+              status={currentSellRequest?.status || 'pending'}
+              petName={currentSellRequest?.petName || 'Unknown Pet'}
+              submittedAt={currentSellRequest?.submittedAt || new Date()}
+            />
+            
+            <div className="status-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate('/my-dashboard')}
+              >
+                View My Dashboard
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleSubmitAnother}
+              >
+                Submit Another Pet
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
