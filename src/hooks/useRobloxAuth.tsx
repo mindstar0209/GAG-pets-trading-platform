@@ -197,7 +197,6 @@ export const useSimplifiedRobloxAuth = () => {
   };
 
   const loginWithRobloxUsername = async (username: string) => {
-    console.log('[useSimplifiedRobloxAuth] loginWithRobloxUsername called with:', username);
     setLoading(true);
     
     try {
@@ -226,11 +225,8 @@ export const useSimplifiedRobloxAuth = () => {
         createdAt: new Date()
       };
 
-      console.log('[useSimplifiedRobloxAuth] Created mock user:', mockUser);
-
       // Save to localStorage for demo
       localStorage.setItem('robloxUser', JSON.stringify(mockUser));
-      console.log('[useSimplifiedRobloxAuth] Saved user to localStorage');
       setUser(mockUser);
       
       // Return success

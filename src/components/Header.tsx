@@ -1,11 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTraditionalAuth } from '../hooks/useTraditionalAuth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import './Header.css';
 
 const Header: React.FC = () => {
   const { user, logout } = useTraditionalAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [currentBalance, setCurrentBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceUpdated, setBalanceUpdated] = useState(false);
+
+  // Real-time balance listener
+  useEffect(() => {
+    if (!user?.uid) {
+      setCurrentBalance(0);
+      return;
+    }
+
+    setBalanceLoading(true);
+    const userRef = doc(db, 'users', user.uid);
+    
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        const newBalance = userData.balance || 0;
+        
+        // Show update animation if balance changed
+        setCurrentBalance(prevBalance => {
+          if (newBalance !== prevBalance) {
+            setBalanceUpdated(true);
+            setTimeout(() => setBalanceUpdated(false), 2000);
+          }
+          return newBalance;
+        });
+      } else {
+        setCurrentBalance(0);
+      }
+      setBalanceLoading(false);
+    }, (error) => {
+      console.error('Error listening to balance updates:', error);
+      // Fallback to user.balance if available
+      setCurrentBalance(user.balance || 0);
+      setBalanceLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid, user?.balance]);
 
   return (
     <header className="header">
@@ -29,9 +73,18 @@ const Header: React.FC = () => {
                 <span className="deposit-icon">💰</span>
                 Deposit
               </Link>
-              <div className="balance-display">
+              <div className={`balance-display ${balanceUpdated ? 'balance-updated' : ''}`}>
                 <span className="balance-icon">💵</span>
-                <span className="balance-amount">${user.balance?.toFixed(2) || '0.00'}</span>
+                <span className="balance-amount">
+                  {balanceLoading ? (
+                    <span className="balance-loading">...</span>
+                  ) : (
+                    `$${currentBalance.toFixed(2)}`
+                  )}
+                </span>
+                {balanceUpdated && (
+                  <span className="balance-update-indicator">✨</span>
+                )}
               </div>
               <div className="user-dropdown" onClick={() => setShowDropdown(!showDropdown)}>
                 <img 

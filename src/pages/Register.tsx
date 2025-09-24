@@ -44,8 +44,7 @@ const Register: React.FC = () => {
       setLoading(false);
 
       if (err.message?.includes("already exists")) {
-        // You could add a link to login page here
-        console.log("User should sign in instead");
+        // Redirect to login page
         navigate("/login");
       }
     }

@@ -4,6 +4,7 @@ import { createTrade } from '../utils/tradingService';
 import { Trade } from '../types/trading';
 import { TransactionService } from '../services/transactionService';
 import { MarketplaceService } from '../services/marketplaceService';
+import { UserService } from '../services/userService';
 import TradingFlow from './TradingFlow';
 import './PurchaseFlow.css';
 
@@ -59,10 +60,30 @@ const PurchaseFlow: React.FC<PurchaseFlowProps> = ({ pet, onClose, onPurchaseCom
         pet.sellerName || 'Unknown Seller'
       );
 
-      // Update user balance (deduct the cost)
-      const newBalance = (user?.balance || 0) - totalCost;
-      // Note: In a real app, you would call the user service to update balance
-      // For now, we'll just record the transaction
+      // Mark pet as sold and add credit to seller
+      await MarketplaceService.markPetAsSold(
+        pet.id,
+        user?.uid || '',
+        user?.displayName || 'Unknown Buyer'
+      );
+
+      // Add credit to seller account
+      const sellerCreditAmount = pet.price; // Seller gets the full pet price (service fee goes to platform)
+      await TransactionService.recordSale(
+        pet.sellerId,
+        pet.id,
+        pet.name,
+        pet.price, // Original price
+        user?.uid || '',
+        user?.displayName || 'Unknown Buyer',
+        sellerCreditAmount // Credit amount (same as price in this case)
+      );
+
+      // Actually update the balances
+      await UserService.addCredit(pet.sellerId, sellerCreditAmount);
+      await UserService.deductBalance(user?.uid || '', totalCost);
+
+      // Sale completed successfully
       
       // Create trade with bot
       const trade = await createTrade(

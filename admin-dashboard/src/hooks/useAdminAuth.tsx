@@ -52,7 +52,6 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }, { merge: true });
           } else {
             // Not an admin user
-            console.log('User not found in adminUsers collection:', firebaseUser.email);
             setUser(null);
             await signOut(auth);
           }

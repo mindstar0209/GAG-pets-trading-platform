@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, getDocs, getDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Pet } from '../types';
 import { SellRequest } from '../types/sellRequest';
@@ -109,6 +109,17 @@ export class MarketplaceService {
    */
   static async markPetAsSold(petId: string, buyerId: string, buyerName: string): Promise<void> {
     try {
+      // First, get the pet to find the sell request ID
+      const petDocRef = doc(db, 'pets', petId);
+      const petDoc = await getDoc(petDocRef);
+      if (!petDoc.exists()) {
+        throw new Error('Pet not found');
+      }
+      
+      const petData = petDoc.data();
+      const sellRequestId = petData.sellRequestId;
+      
+      // Update the pet as sold
       await updateDoc(doc(db, 'pets', petId), {
         listed: false,
         sold: true,
@@ -116,6 +127,16 @@ export class MarketplaceService {
         buyerId,
         buyerName,
       });
+
+      // Update the sell request status to completed
+      if (sellRequestId) {
+        await updateDoc(doc(db, 'sellRequests', sellRequestId), {
+          status: 'completed',
+          soldAt: new Date(),
+          buyerId,
+          buyerName,
+        });
+      }
     } catch (error) {
       console.error('Error marking pet as sold:', error);
       throw error;

@@ -8,7 +8,8 @@ import {
   updateDoc, 
   doc, 
   addDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  increment
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { SellRequest, Transaction, StaffAction } from '../types';
@@ -94,11 +95,30 @@ export class AdminService {
     staffName: string
   ): Promise<void> {
     try {
+      // Update sell request
       await updateDoc(doc(db, 'sellRequests', requestId), {
         creditAmount,
         creditAddedAt: serverTimestamp(),
         status: 'completed',
         updatedAt: serverTimestamp(),
+      });
+
+      // Actually add credit to user's balance
+      await updateDoc(doc(db, 'users', sellerId), {
+        balance: increment(creditAmount)
+      });
+
+      // Record the sale transaction for the seller
+      await addDoc(collection(db, 'transactions'), {
+        userId: sellerId,
+        type: 'sale',
+        amount: creditAmount,
+        description: `Pet sale credit added by staff`,
+        petId: requestId, // Using requestId as petId for now
+        petName: 'Pet Sale',
+        buyerId: 'staff',
+        buyerName: staffName,
+        createdAt: serverTimestamp(),
       });
 
       // Log staff action

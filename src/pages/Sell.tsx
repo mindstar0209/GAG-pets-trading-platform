@@ -171,8 +171,6 @@ const Sell: React.FC = () => {
 
   const handleCustodyComplete = async (custodyData: any) => {
     try {
-      console.log('Custody completed with data:', custodyData);
-      
       // Create sell request instead of directly listing the pet
       const petData = {
         name: petDataForCustody.name,
@@ -198,14 +196,6 @@ const Sell: React.FC = () => {
         custodyDate: new Date()
       };
 
-      console.log('Creating sell request with data:', {
-        sellerId: user!.uid,
-        sellerName: user!.displayName || user!.email || 'Anonymous',
-        sellerEmail: user!.email || '',
-        petData,
-        custodyInfo
-      });
-
       // Create sell request for staff review
       const requestId = await SellRequestService.createSellRequest(
         user!.uid,
@@ -214,8 +204,6 @@ const Sell: React.FC = () => {
         petData,
         custodyInfo
       );
-
-      console.log('Sell request created with ID:', requestId);
       
       // Store the sell request for status display
       setPendingRequestId(requestId);

@@ -44,8 +44,6 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
 
     try {
       // Create custody request for staff to handle
-      console.log("Creating custody request for staff...");
-      
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -62,12 +60,10 @@ const PetCustodyFlow: React.FC<PetCustodyFlowProps> = ({
         requestedAt: new Date()
       };
 
-      console.log("Custody request created:", custodyData);
       setStep("waiting_staff");
 
       // For testing, immediately complete the custody process
       setTimeout(() => {
-        console.log("Custody completed for testing");
         onCustodyComplete(custodyData);
         setStep("complete");
       }, 2000);

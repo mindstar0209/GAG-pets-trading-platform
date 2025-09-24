@@ -88,9 +88,7 @@ export const TraditionalAuthProvider: React.FC<{
                 userData.robloxUsername && !userData.linkedAccounts;
 
               if (needsMigration) {
-                console.log(
-                  "Migrating legacy Roblox account to multi-account system"
-                );
+                // Migrating legacy Roblox account to multi-account system
 
                 // Create account data for migration
                 const accountData: Omit<

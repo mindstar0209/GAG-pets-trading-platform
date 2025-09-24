@@ -55,8 +55,7 @@ const Home: React.FC = () => {
               to="/auth/roblox" 
               className="cta-button secondary"
               onClick={(e) => {
-                console.log('Login button clicked!');
-                console.log('Navigation target:', '/auth/roblox');
+                // Navigate to Roblox auth
               }}
             >
               Login with Roblox
@@ -132,8 +131,7 @@ const Home: React.FC = () => {
             to="/auth/roblox" 
             className="cta-button large"
             onClick={(e) => {
-              console.log('Login button clicked! (CTA section)');
-              console.log('Navigation target:', '/auth/roblox');
+              // Navigate to Roblox auth
             }}
           >
             Login with Roblox
